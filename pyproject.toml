@@ -42,7 +42,7 @@ readme = {file = ["README.md", ], content-type = "text/markdown"}
 
 [tool.chora]
 # Default configuration for chora server
-root = "./chora-root"
+root = "./example"
 port = 8000
 host = "localhost"
 

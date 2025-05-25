@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if grep "test=yes" $1/REQUEST >/dev/null; then
+    echo ./good_test
+else
+    echo ./root
+fi
