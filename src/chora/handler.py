@@ -2,6 +2,10 @@
 HTTP request handler for chora server.
 """
 
+import os
+import subprocess
+import tempfile
+from functools import partial
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlparse
@@ -12,12 +16,13 @@ class ChoraHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def __init__(self, *args, root_dir, **kwargs):
         self.root_dir = Path(root_dir)
+        self.tmpdir = Path("/tmp/chora_cache")
         super().__init__(*args, **kwargs)
 
     def __getattr__(self, item):
         """Override __getattr__ to handle unsupported methods."""
         if item.startswith("do_"):
-            return lambda: self._handle_request(item[3:])
+            return partial(self._handle_request, item[3:])
         raise AttributeError(f"Method {item} not supported.")
 
     def get_handler(self, directory):
@@ -28,10 +33,30 @@ class ChoraHTTPRequestHandler(BaseHTTPRequestHandler):
         if not directory.is_dir():
             raise ValueError(f"Invalid directory: {directory}")
 
-        if (directory / "HANDLER").exists():
-            raise NotImplementedError("Custom handlers are not implemented yet.")
+        if (directory / "HANDLE").exists():
+            return self._dynamic_handler(directory)
 
-        return self._static_handler
+        return partial(self._static_handler, directory)
+
+    def _dynamic_handler(self, directory):
+        handler = (directory / "HANDLE").absolute()
+
+        if not os.access(handler, os.X_OK):
+            raise PermissionError(f"HANDLE script is not executable: {handler}")
+
+        proc = subprocess.run(
+            [str(handler.absolute()), str(self.tmpdir)],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        output = proc.stdout.strip()
+        response_dir = Path(output)
+        if not response_dir.is_absolute():
+            response_dir = handler.parent / response_dir
+
+        print(f"Dynamic handler output: {response_dir}")
+        return self.get_handler(response_dir)
 
     def _static_handler(self, directory):
         status_file = directory / "STATUS"
@@ -49,26 +74,38 @@ class ChoraHTTPRequestHandler(BaseHTTPRequestHandler):
                 response_headers[key.strip()] = value.strip()
         return status_code, response_data, response_headers
 
+    def _cache_request(self):
+        (self.tmpdir / "REQUEST").write_text(str(self.requestline))
+
+        with open(self.tmpdir / "HEADERS", "w") as f:
+            for k, v in self.headers.items():
+                f.write(f"{k}: {v}\n")
+
+        # Read request body if present
+        content_length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_length).decode()
+        (self.tmpdir / "DATA").write_text(str(body))
+
     def _handle_request(self, method):
         """Handle HTTP request by looking up response in file system."""
         parsed_url = urlparse(self.path)
         path = parsed_url.path.strip("/")
-        query_string = parsed_url.query
 
         method_dir = self.root_dir / path / method
-        if query_string:
-            method_dir = method_dir / query_string
 
-        handler = self.get_handler(method_dir)
-        status_code, data, headers = handler(method_dir)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self.tmpdir = Path(tmpdir)
+            self._cache_request()
+            handler = self.get_handler(method_dir)
+            status_code, data, headers = handler()
 
-        self.send_response(status_code)
+            self.send_response(status_code)
 
-        for key, value in headers.items():
-            self.send_header(key, value)
-        self.end_headers()
+            for key, value in headers.items():
+                self.send_header(key, value)
+            self.end_headers()
 
-        self.wfile.write(data)
+            self.wfile.write(data)
 
         print(f"{method} {self.path} -> {status_code}")
 
