@@ -1,0 +1,41 @@
+[project]
+name = "chora"
+description = "Deploy a mock server for use in testing."
+dynamic = ["readme"]
+version = "0.0.0"
+requires-python = ">=3.13"
+license = {text = "MIT"}
+authors = [
+    {name = "pbhandari", email = "pbhandari@pbhandari.ca"}
+]
+keywords = ["server", "mock", ]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Systems Administration",
+    "Typing :: Typed"
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "mypy",
+    "twine",
+    "pip-tools",
+]
+
+[project.urls]
+Homepage = "https://github.com/pbhandari/chora"
+Releases = "https://github.com/pbhandari/chora/releases"
+Issues = "https://github.com/pbhandari/chora/issues"
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md", ], content-type = "text/markdown"}
+
+[tool.poetry]
+package-mode = false
