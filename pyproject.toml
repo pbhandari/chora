@@ -2,7 +2,7 @@
 name = "chora"
 description = "Deploy a mock server for use in testing."
 dynamic = ["readme"]
-version = "0.0.0"
+version = "0.1.0"
 requires-python = ">=3.13"
 license = {text = "MIT"}
 authors = [
@@ -20,6 +20,9 @@ classifiers = [
     "Typing :: Typed"
 ]
 dependencies = []
+
+[project.scripts]
+chora = "chora:main"
 
 [project.optional-dependencies]
 dev = [
