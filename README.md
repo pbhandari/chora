@@ -20,33 +20,37 @@ directories.
 
 - Each directory represents a route.
 - Files inside directories represent responses, statuses, and headers for specific HTTP methods and endpoints.
+- Dynamic request handling is done with a special HANDLE script.
 - The server reads the file system to determine how to respond to incoming requests.
 
 ### Example Structure
 
-chora-root/
+```text
+example/
 ├── users/
 │   └── GET/
-│       ├── HEADERS                  # Custom headers for GET /users
-│       ├── DATA                     # Response body for GET /users
-│       └── STATUS                   # HTTP status code for GET /users
-│       └── name%3DPraj/GET          # URL-encoded query: ?name=Praj
-│           ├── HEADERS              # Custom headers for GET /users?name=Praj
-│           ├── DATA                 # Response body for GET /users?name=Praj
-│           └── STATUS               # HTTP status code for GET /users?name=Praj
-├── users/123/
-│   └── GET/
-│       ├── HEADERS                  # Custom headers for GET /users/123
-│       ├── DATA                     # Response body for GET /users/123
-│       └── STATUS                   # HTTP status code for GET /users/123
+│   │    ├── HEADERS                  # Custom headers for GET /users
+│   │    ├── DATA                     # Response body for GET /users
+│   │    └── STATUS                   # HTTP status code for GET /users
+│   └── POST/
+│   │    ├── HEADERS                  # Custom headers for POST /users/
+│   │    ├── DATA                     # Response body for POST /users/
+│   │    └── STATUS                   # HTTP status code for POST /users/
+│   └── PUT/
+│        └── HANDLE                   # Custom handler for PUT /users/
 └── status/
     └── POST/
-        ├── HEADERS                  # Custom headers for GET /status
-        ├── DATA                     # Response body for GET /status
-        └── STATUS                   # HTTP status code for GET /status
+        ├── HEADERS                   # Custom headers for POST /status
+        ├── DATA                      # Response body for POST /status
+        └── STATUS                    # HTTP status code for POST /status
+```
 
-A request to GET /users/123 will return the contents of users/123/GET/DATA, with headers from users/123/GET/HEADERS and status from users/123/GET/STATUS.
-A request to GET /users?name=Praj will return the contents of users/GET/name%3DPraj/DATA, with headers from users/GET/name%3DPraj/HEADERS and status from users/GET/name%3DPraj/STATUS.
+A request to GET /users will return the contents of users/GET/DATA, with
+headers from users/GET/HEADERS and status from users/GET/STATUS.
+
+A request to PUT /users will execute the HANDLE script, with $1 containing the folder
+with the details of the request.  The script is expected to introspect that and supply
+a path to a folder containing the DATA, HEADERS and STATUS files.
 
 ## Installation
 
@@ -54,7 +58,7 @@ pip install chora
 
 ## Usage
 
-chora --root ./chora-root --port 8080
+chora --root ./example --port 8080
 
 - --root: Path to the directory containing your mock API structure.
 - --port: Port to run the server on (default: 8000).
