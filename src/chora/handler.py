@@ -25,13 +25,22 @@ class ChoraHTTPRequestHandler(BaseHTTPRequestHandler):
             return partial(self._handle_request, item[3:])
         raise AttributeError(f"Method {item} not supported.")
 
-    def get_handler(self, directory):
-        """Get the handler for the request based on the directory structure."""
-        if not directory.exists():
-            raise FileNotFoundError(f"Directory not found: {directory}")
+    def _get_directory(self, directory: Path) -> Path | None:
+        if directory.is_dir():
+            return directory
 
-        if not directory.is_dir():
-            raise ValueError(f"Invalid directory: {directory}")
+        parts = list(directory.parts)
+        for i in range(len(parts), 0, -1):
+            candidate = Path(*parts[: i - 1], "__TEMPLATE__", *parts[i:])
+            if candidate.exists() and candidate.is_dir():
+                return candidate
+        return None
+
+    def get_handler(self, directory: Path):
+        """Get the handler for the request based on the directory structure."""
+        directory = self._get_directory(directory)  # type: ignore[assignment]
+        if not directory:
+            raise FileNotFoundError(f"Directory not found: {directory}")
 
         if (directory / "HANDLE").exists():
             return self._dynamic_handler(directory)
