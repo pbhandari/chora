@@ -8,6 +8,7 @@ import tempfile
 from functools import partial
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
+from typing import Callable
 from urllib.parse import urlparse
 
 
@@ -19,7 +20,7 @@ class ChoraHTTPRequestHandler(BaseHTTPRequestHandler):
         self.tmpdir = Path("/tmp/chora_cache")
         super().__init__(*args, **kwargs)
 
-    def __getattr__(self, item):
+    def __getattr__(self, item: str) -> Callable:
         """Override __getattr__ to handle unsupported methods."""
         if item.startswith("do_"):
             return partial(self._handle_request, item[3:])
@@ -36,7 +37,9 @@ class ChoraHTTPRequestHandler(BaseHTTPRequestHandler):
                 return candidate
         return None
 
-    def get_handler(self, directory: Path):
+    def get_handler(
+        self, directory: Path
+    ) -> Callable[[], tuple[int, bytes, dict[str, str]]]:
         """Get the handler for the request based on the directory structure."""
         directory = self._get_directory(directory)  # type: ignore[assignment]
         if not directory:
@@ -47,7 +50,9 @@ class ChoraHTTPRequestHandler(BaseHTTPRequestHandler):
 
         return partial(self._static_handler, directory)
 
-    def _dynamic_handler(self, directory):
+    def _dynamic_handler(
+        self, directory: Path
+    ) -> Callable[[], tuple[int, bytes, dict[str, str]]]:
         handler = (directory / "HANDLE").absolute()
 
         if not os.access(handler, os.X_OK):
@@ -67,7 +72,7 @@ class ChoraHTTPRequestHandler(BaseHTTPRequestHandler):
         print(f"Dynamic handler output: {response_dir}")
         return self.get_handler(response_dir)
 
-    def _static_handler(self, directory):
+    def _static_handler(self, directory: Path) -> tuple[int, bytes, dict[str, str]]:
         status_file = directory / "STATUS"
         status_code = int(status_file.read_text().strip())
 
@@ -83,7 +88,7 @@ class ChoraHTTPRequestHandler(BaseHTTPRequestHandler):
                 response_headers[key.strip()] = value.strip()
         return status_code, response_data, response_headers
 
-    def _cache_request(self):
+    def _cache_request(self) -> None:
         (self.tmpdir / "REQUEST").write_text(str(self.requestline))
 
         with open(self.tmpdir / "HEADERS", "w") as f:
@@ -95,7 +100,7 @@ class ChoraHTTPRequestHandler(BaseHTTPRequestHandler):
         body = self.rfile.read(content_length).decode()
         (self.tmpdir / "DATA").write_text(str(body))
 
-    def _handle_request(self, method):
+    def _handle_request(self, method: str) -> None:
         """Handle HTTP request by looking up response in file system."""
         parsed_url = urlparse(self.path)
         path = parsed_url.path.strip("/")
@@ -119,7 +124,7 @@ class ChoraHTTPRequestHandler(BaseHTTPRequestHandler):
         print(f"{method} {self.path} -> {status_code}")
 
 
-def create_handler(root_dir):
+def create_handler(root_dir: str | Path) -> Callable:
     def handler(*args, **kwargs):
         return ChoraHTTPRequestHandler(root_dir=root_dir, *args, **kwargs)
 
