@@ -3,10 +3,25 @@
 chora server implementation.
 """
 
+import atexit
+from functools import partial
 from http.server import HTTPServer
 from pathlib import Path
 
 from .handler import create_handler
+
+
+def cleanup(server: HTTPServer) -> None:
+    print("\nShutting down server...")
+    try:
+        server.shutdown()
+    except Exception as e:
+        print(f"Warning: Error during server shutdown: {e}")
+
+    try:
+        server.server_close()
+    except Exception as e:
+        print(f"Warning: Error during server close: {e}")
 
 
 def start_server(root_path: Path, host: str, port: int) -> None:
@@ -20,9 +35,6 @@ def start_server(root_path: Path, host: str, port: int) -> None:
     handler = create_handler(root_path)
     server = HTTPServer((host, port), handler)
 
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        print("\nShutting down server...")
-        server.shutdown()
-        server.server_close()
+    atexit.register(partial(cleanup, server))
+
+    server.serve_forever()

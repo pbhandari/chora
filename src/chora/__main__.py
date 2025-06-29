@@ -5,7 +5,7 @@ from .cli import parse_arguments
 from .server import start_server
 
 
-def main():
+def main() -> None:
     """Main entry point for chora server."""
     args = parse_arguments()
 

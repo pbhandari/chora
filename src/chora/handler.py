@@ -130,36 +130,27 @@ class ChoraHTTPRequestHandler(BaseHTTPRequestHandler):
             print(f"{method} {self.path} -> {status_code}")
 
         except FileNotFoundError:
-            # Handle missing directories, files, or paths
             self._send_error_response(404, "Not Found")
 
         except PermissionError:
-            # Handle permission issues (non-executable HANDLE scripts, etc.)
             self._send_error_response(403, "Forbidden")
 
         except (ValueError, subprocess.CalledProcessError) as e:
-            # Handle malformed files (STATUS), script failures, etc.
-            self._send_error_response(500, f"Internal Server Error: {str(e)}")
-
-        except Exception as e:
-            # Catch-all for any other unexpected errors
             self._send_error_response(500, f"Internal Server Error: {str(e)}")
 
     def _send_error_response(self, status_code: int, message: str) -> None:
         """Send a simple error response."""
-        try:
-            self.send_response(status_code)
-            self.send_header("Content-Type", "text/plain")
-            self.end_headers()
-            self.wfile.write(message.encode())
-            print(f"ERROR {self.path} -> {status_code}: {message}")
-        except Exception:
-            # If we can't even send an error response, just close the connection
-            pass
+        self.send_response(status_code)
+        self.send_header("Content-Type", "text/plain")
+        self.end_headers()
+        self.wfile.write(message.encode())
+        print(f"ERROR {self.path} -> {status_code}: {message}")
 
 
-def create_handler(root_dir: str | Path, tmpdir: str | Path = "") -> Callable:
-    def handler(*args, **kwargs):
+def create_handler(
+    root_dir: str | Path, tmpdir: str | Path = ""
+) -> Callable[..., ChoraHTTPRequestHandler]:
+    def handler(*args, **kwargs) -> ChoraHTTPRequestHandler:
         return ChoraHTTPRequestHandler(
             root_dir=root_dir, tmpdir=tmpdir, *args, **kwargs
         )
