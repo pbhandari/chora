@@ -29,6 +29,9 @@ dev = [
     "mypy",
     "twine",
     "pip-tools",
+    "pytest",
+    "pytest-sugar",
+    "pytest-cov",
 ]
 
 [project.urls]
@@ -47,6 +50,26 @@ chora = ["py.typed"]
 root = "./example"
 port = 8000
 host = "localhost"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[tool.coverage.run]
+source = ["src", "test"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
 
 [tool.poetry]
 package-mode = false
