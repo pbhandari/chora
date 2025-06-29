@@ -82,4 +82,5 @@ def main():
     start_server(root_path, args.host, args.port)
 
 
-main()
+if __name__ == "__main__":
+    main()

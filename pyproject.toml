@@ -16,7 +16,6 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.13",
-    "Topic :: System :: Systems Administration",
     "Typing :: Typed"
 ]
 dependencies = []
@@ -39,6 +38,9 @@ Issues = "https://github.com/pbhandari/chora/issues"
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md", ], content-type = "text/markdown"}
+
+[tool.setuptools.package-data]
+chora = ["py.typed"]
 
 [tool.chora]
 # Default configuration for chora server
